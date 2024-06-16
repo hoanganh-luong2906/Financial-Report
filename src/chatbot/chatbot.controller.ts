@@ -1,9 +1,28 @@
-import { Controller, Get, Post } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
-import { NextFunction } from 'express';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Controller('chatbot')
+export class WebhookBody {
+  @ApiProperty({
+    example: 'page',
+  })
+  object: string;
+
+  @ApiProperty({
+    example: [
+      {
+        messaging: [
+          {
+            message: 'TEST_MESSAGE',
+          },
+        ],
+      },
+    ],
+  })
+  entry: any[];
+}
+
+@Controller('')
 export class ChatbotController {
   constructor(private readonly chatbotService: ChatbotService) {}
 
@@ -12,7 +31,18 @@ export class ChatbotController {
     return this.chatbotService.getHello();
   }
 
-  @Post()
-  @ApiOkResponse({ description: '' })
-  postWebhook(req: any, res: Response, next: NextFunction) {}
+  @Post('/webhook')
+  postWebhook(@Body() reqBody: WebhookBody) {
+    console.log('>>>Received body: ' + JSON.stringify(reqBody) + '<<<');
+    this.chatbotService.postWebhook(reqBody);
+  }
+
+  @Get('/messaging-webhook')
+  getWebhook(
+    @Query('hub.mode') mode: string,
+    @Query('hub.verify_token') token: string,
+    @Query('hub.challenge') challenge: string,
+  ) {
+    return this.chatbotService.getWebhook(mode, token, challenge);
+  }
 }
